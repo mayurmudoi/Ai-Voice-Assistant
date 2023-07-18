@@ -1,15 +1,8 @@
-import { Text, View, SafeAreaView } from 'react-native'
+import { View, Text } from 'react-native'
 import React from 'react'
+import AppNavigation from './src/navigation';
 
-const App = () => {
-  return (
-    <SafeAreaView>
-      <Text>App</Text>
-      <Text>hello</Text>
-      <Text>hello</Text>
-    </SafeAreaView>
-  )
-}
+export default function App() {  
+  return <AppNavigation/>
 
-export default App
-
+};
