@@ -18,7 +18,7 @@ const MainNavigator = () => {
 export default function AppNavigation() {
   return (
     <NavigationContainer>
-      <MainNavigator />
+      <MainNavigator style={{margin:2}}/>
     </NavigationContainer>
   );
 };
