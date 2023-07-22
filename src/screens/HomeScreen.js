@@ -1,13 +1,17 @@
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, Image, ScrollView, TouchableOpacity } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, SafeAreaView, Image, ScrollView, TouchableOpacity,PermissionsAndroid } from 'react-native'
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import Features from '../components/Features';
 import { dummyMessages } from '../constants';
+import Voice from '@react-native-community/voice';
+import { apiCall } from '../api/openAI';
+
 
 export default function HomeScreen() {
   const [messages, setMessages] =useState (dummyMessages);
   const [recording, setRecording] =useState(false);
   const [speaking, setSpeaking] =useState(true);
+  const [result, setResult] =useState('');
   
   const clear = () =>{
     setMessages([]);
@@ -15,9 +19,69 @@ export default function HomeScreen() {
   const stopSpeaking = () =>{
     setSpeaking(false);
   }
+  const speechStartHandler = e => {
+    console.log('speech start event', e);
+  };
+  const speechEndHandler = e => {
+    setRecording(false);
+    console.log('speech stop event', e);
+  };
+  const speechResultsHandler = e => {
+    console.log('speech event: ',e);
+    const text = e.value[0];
+    setResult(text);
+  };
+  const speechErrorHandler = e=>{
+    console.log('speech error: ',e);
+  };
+  const startRecording = async () => {
+    setRecording(true);
+    try {
+      await Voice.start('en-GB');
+
+    } catch (error) {
+      console.log('error', error);
+    }
+  };
+  const stopRecording = async () => {
+    try {
+      await Voice.stop();
+      setRecording(false);
+      fetchResponse();
+    } catch (error) {
+      console.log('error', error);
+    }
+  };
+
+  const fetchResponse  = () =>{
+    if(result.trim().length>0){
+      let newMessages = [...messages];
+      newMessages.push({role: ' user', content:result.trim()})
+      setMessages([...newMessages]);
+
+      apiCall(result.trim(), newMessages).then(res=>{
+        console.log('got api data: ',res)
+      })
+    }
+  }
+
+  useEffect(()=>{
+    Voice.onSpeechStart = speechStartHandler;
+    Voice.onSpeechEnd = speechEndHandler;
+    Voice.onSpeechResults = speechResultsHandler;
+    Voice.onSpeechError = speechErrorHandler;
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  },[])
+
+
+  // console.log('result: ', result);
+
   return(
     <View className=" flex-1 bg-white">
-      <SafeAreaView className=" flex-1 flex margin-5">
+      <SafeAreaView className=" flex-1 flex m-5 ">
         <View className="flex-row justify-center">
           <Image source={require("../../assets/images/bot.png")} style={{width: hp(15), height: hp(15)}}/>
         </View>
@@ -92,7 +156,7 @@ export default function HomeScreen() {
         <View className="flex justify-center items-center">
           {
             recording?(
-              <TouchableOpacity>
+              <TouchableOpacity onPress={stopRecording}>
                 <Image
                   className="rounded-full"
                   source={require('../../assets/images/voiceLoading.gif')}
@@ -100,7 +164,7 @@ export default function HomeScreen() {
                 />
               </TouchableOpacity>
             ):(
-              <TouchableOpacity>
+              <TouchableOpacity onPress={startRecording}>
                 <Image
                   className="rounded-full"
                   source={require('../../assets/images/recordingIcon.png')}
